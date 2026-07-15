@@ -26,17 +26,17 @@ with large-scale multi-country epidemiological datasets.
 
 - **Healthcare spending is strongly associated with life expectancy** 
   globally, with the greatest gains at lower spending levels
-- **Infectious diseases respond to investment** — Tuberculosis, Malaria, 
+- **Infectious diseases respond to investment** - Tuberculosis, Malaria, 
   HIV/AIDS, and lower respiratory infections all show negative correlation 
   with spending (more spending = fewer deaths)
-- **Non-communicable diseases do not respond the same way** — Cancer, 
+- **Non-communicable diseases do not respond the same way** - Cancer, 
   cardiovascular disease, and diabetes show higher rates in wealthier 
   countries, driven by lifestyle and demographic factors
 - **Sub-Saharan Africa made the steepest improvement** in life expectancy 
   from 2000 to 2019, likely driven by HIV/AIDS antiretroviral scale-up, 
   yet still lags all other regions by at least 10 years
 - **A 500-fold spending gap exists** between the highest and lowest life 
-  expectancy countries — Somalia spends $13 per capita, Switzerland $9,610
+  expectancy countries - Somalia spends $13 per capita, Switzerland $9,610
 
 ---
 
@@ -132,12 +132,12 @@ global-health-analysis/
 
 ## Tools Used
 
-- **R** — tidyverse, ggplot2, dplyr, janitor, countrycode, viridis
-- **R Markdown** — for reproducible report generation
-- **Data sources** — World Bank Open Data, IHME GBD 2023
+- **R** - tidyverse, ggplot2, dplyr, janitor, countrycode, viridis
+- **R Markdown** - for reproducible report generation
+- **Data sources** - World Bank Open Data, IHME GBD 2023
 
 ---
 
-*Khushi Desai | MS Bioinformatics, Johns Hopkins University*  
-*Motivated by research in the Baral Lab on multi-country 
-epidemiological datasets*
+*Khushi Amit Desai*  
+*Motivated by my epidemiological research experience at Johns Hopkins 
+University, where I work with large scale multi-country health datasets.*
