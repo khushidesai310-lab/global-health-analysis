@@ -1,0 +1,313 @@
+---
+title: "Healthcare Investment and Global Disease Burden: A Cross-Country Analysis"
+author: "Khushi Amit Desai"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: flatly
+    toc: true
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(ggplot2)
+library(scales)
+library(viridis)
+```
+
+# Introduction
+
+Access to healthcare resources varies dramatically across countries. While some nations spend over $9,000 per person on healthcare annually, others spend less than $50. This raises a fundamental question for global health policy, pharmaceutical strategy, and health technology investment:
+
+**Does healthcare spending actually reduce disease burden, and if so, which diseases respond most to investment?**
+
+This analysis uses data from the World Bank and the Institute for Health Metrics and Evaluation (IHME) Global Burden of Disease 2023 study to explore the relationship between healthcare expenditure and health outcomes across 150+ countries from 2000 to 2019.
+
+This project was motivated by my research experience in the Baral Lab at Johns Hopkins University, where I work with large-scale multi-country epidemiological datasets.
+
+## Research Questions
+
+1. Is there a relationship between healthcare spending per capita and life expectancy?
+2. Which diseases show the highest burden across global regions?
+3. Does higher healthcare spending reduce disease-specific death rates, and does this differ between infectious and non-communicable diseases?
+4. How has life expectancy changed across regions from 2000 to 2019?
+5. What is the spending gap between the highest and lowest life expectancy countries?
+
+---
+
+# Data Sources
+
+| Dataset | Source | Coverage |
+|---|---|---|
+| Healthcare expenditure per capita (USD) | World Bank | 190+ countries, 2000-2023 |
+| Life expectancy at birth (years) | World Bank | 190+ countries, 1960-2022 |
+| Hospital beds per 1,000 people | World Bank | 190+ countries, 1960-2022 |
+| Disease-specific death rates per 100,000 | IHME GBD 2023 | 190+ countries, 2000-2019 |
+
+Diseases analysed: HIV/AIDS, Tuberculosis, Malaria, Cardiovascular diseases,
+Neoplasms (cancer), Diabetes mellitus, Lower respiratory infections.
+
+---
+
+# Data Cleaning and Methodology
+
+```{r load_data}
+merged_full <- read_csv("C:/Users/KHUSHI/amr_project/data/processed/merged_full.csv",
+                        show_col_types = FALSE)
+
+df <- merged_full %>%
+  filter(
+    !is.na(health_spending_per_capita),
+    !is.na(wb_life_expectancy),
+    !is.na(region),
+    !is.na(cause),
+    cause != "NA",
+    year %in% c(2000, 2005, 2010, 2015, 2019)
+  )
+
+cat("Countries in analysis:", n_distinct(df$country), "\n")
+cat("Years covered:", unique(df$year), "\n")
+cat("Diseases analysed:", unique(df$cause), "\n")
+```
+
+**Key cleaning steps performed:**
+
+- Reshaped World Bank data from wide format (years as columns) to long format
+- Removed regional aggregates (e.g. "Sub-Saharan Africa aggregate") and kept only individual countries
+- Matched countries across datasets using ISO country codes via the `countrycode` R package
+- Removed rows with missing values in key variables
+- Filtered GBD data to all-ages, both-sex, rate metric for consistency
+
+---
+
+# Results
+
+## Healthcare Spending and Life Expectancy
+
+```{r plot1, fig.width=10, fig.height=7}
+df_2019 <- df %>%
+  filter(year == 2019) %>%
+  distinct(country, country_code, region,
+           health_spending_per_capita, wb_life_expectancy)
+
+ggplot(df_2019,
+       aes(x = health_spending_per_capita,
+           y = wb_life_expectancy,
+           color = region)) +
+  geom_point(alpha = 0.7, size = 2.5) +
+  geom_smooth(method = "lm", se = TRUE,
+              color = "black", linewidth = 0.8) +
+  scale_x_log10(labels = dollar_format(prefix = "$")) +
+  labs(
+    title = "Healthcare Spending vs Life Expectancy (2019)",
+    subtitle = "Each dot represents one country. X axis is log scale.",
+    x = "Healthcare Spending per Capita (USD, log scale)",
+    y = "Life Expectancy at Birth (years)",
+    color = "Region",
+    caption = "Sources: World Bank, GBD 2023"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(plot.title = element_text(face = "bold"),
+        legend.position = "bottom")
+```
+
+**Finding:** There is a strong positive relationship between healthcare spending per capita and life expectancy across all regions. Countries spending more than $1,000 per capita consistently achieve life expectancy above 75 years. Sub-Saharan African countries cluster in the bottom left — characterised by both the lowest spending and lowest life expectancy. The log scale reveals that early increases in spending from very low levels produce the largest gains in life expectancy, suggesting diminishing returns at high spending levels.
+
+---
+
+## Disease Burden by Region
+
+```{r plot2, fig.width=12, fig.height=8}
+df_disease_region <- df %>%
+  filter(year == 2019, cause != "Total cancers") %>%
+  group_by(region, cause) %>%
+  summarise(avg_death_rate = mean(death_rate_per_100k, na.rm = TRUE),
+            .groups = "drop")
+
+ggplot(df_disease_region,
+       aes(x = reorder(cause, avg_death_rate),
+           y = avg_death_rate,
+           fill = region)) +
+  geom_col(position = "dodge") +
+  coord_flip() +
+  scale_fill_viridis_d() +
+  labs(
+    title = "Average Disease Death Rates by Region (2019)",
+    subtitle = "Deaths per 100,000 population",
+    x = "Disease",
+    y = "Average Death Rate per 100,000",
+    fill = "Region",
+    caption = "Source: IHME GBD 2023"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(plot.title = element_text(face = "bold"),
+        legend.position = "bottom")
+```
+
+**Finding:** Cardiovascular disease is the leading cause of death across all regions, with Europe and Central Asia carrying a disproportionately high burden despite relatively high healthcare spending. Sub-Saharan Africa carries the highest burden of infectious diseases, particularly HIV/AIDS and Tuberculosis, while also having among the lowest healthcare spending globally. Malaria burden is almost entirely concentrated in Sub-Saharan Africa.
+
+---
+
+## Does Healthcare Spending Reduce Disease Death Rates?
+
+```{r plot3, fig.width=10, fig.height=6}
+df_corr <- df %>%
+  filter(year == 2019, cause != "Total cancers",
+         !is.na(death_rate_per_100k)) %>%
+  group_by(cause) %>%
+  summarise(
+    correlation = cor(log10(health_spending_per_capita),
+                      death_rate_per_100k,
+                      use = "complete.obs"),
+    n_countries = n(),
+    .groups = "drop"
+  ) %>%
+  arrange(correlation)
+
+ggplot(df_corr,
+       aes(x = reorder(cause, correlation),
+           y = correlation,
+           fill = correlation < 0)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_manual(
+    values = c("TRUE" = "#2ecc71", "FALSE" = "#e74c3c"),
+    labels = c("TRUE" = "Negative (spending helps)",
+               "FALSE" = "Positive (spending does not help)")
+  ) +
+  geom_hline(yintercept = 0, linewidth = 0.8) +
+  labs(
+    title = "Does Healthcare Spending Reduce Disease Death Rates?",
+    subtitle = "Correlation between spending per capita and death rate per 100,000 (2019)",
+    x = "Disease",
+    y = "Correlation with Healthcare Spending (log scale)",
+    fill = "Direction",
+    caption = "Negative correlation means higher spending is associated with lower death rates\nSource: World Bank, IHME GBD 2023"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(plot.title = element_text(face = "bold"),
+        legend.position = "bottom")
+```
+
+**Finding:** This is the most important result of the analysis. Infectious diseases, Tuberculosis, Malaria, HIV/AIDS, and Lower respiratory infections, all show negative correlations with healthcare spending, meaning countries that invest more in healthcare have significantly lower death rates from these conditions. This aligns with the well-established effectiveness of antiretroviral therapy, antimalarial programs, and vaccination campaigns when adequately funded.
+
+In contrast, non-communicable diseases, Neoplasms (cancer), Cardiovascular disease, and Diabetes, show positive correlations with spending. Higher-spending countries actually have higher reported death rates from these conditions. This is not because spending causes these diseases, but rather because wealthier, longer living populations are more exposed to lifestyle risk factors such as sedentary behavior, processed food consumption, and obesity, and they live long enough to develop these conditions.
+
+This finding has direct implications for pharmaceutical R&D investment decisions: infectious disease burden is highly responsive to healthcare investment, while non-communicable disease burden requires addressing upstream lifestyle and demographic factors beyond healthcare spending alone.
+
+---
+
+## Life Expectancy Trends by Region (2000 to 2019)
+
+```{r plot4, fig.width=10, fig.height=6}
+df_trend <- df %>%
+  distinct(country, country_code, region, year, wb_life_expectancy) %>%
+  group_by(region, year) %>%
+  summarise(avg_life_exp = mean(wb_life_expectancy, na.rm = TRUE),
+            .groups = "drop")
+
+ggplot(df_trend,
+       aes(x = year, y = avg_life_exp,
+           color = region, group = region)) +
+  geom_line(linewidth = 1.2) +
+  geom_point(size = 2.5) +
+  scale_x_continuous(breaks = c(2000, 2005, 2010, 2015, 2019)) +
+  scale_color_viridis_d() +
+  labs(
+    title = "Life Expectancy Trends by Region (2000 to 2019)",
+    subtitle = "Average life expectancy at birth",
+    x = "Year",
+    y = "Average Life Expectancy (years)",
+    color = "Region",
+    caption = "Source: World Bank"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(plot.title = element_text(face = "bold"),
+        legend.position = "bottom")
+```
+
+**Finding:** Life expectancy improved in every region between 2000 and 2019. Sub-Saharan Africa showed the steepest rate of improvement rising from approximately 51 years in 2000 to 63 years in 2019. This acceleration is likely attributable to the scale-up of HIV/AIDS antiretroviral treatment programs from the mid-2000s onward, as well as improvements in malaria prevention and child health interventions. Despite this progress, a gap of approximately 18 years persists between Sub-Saharan Africa and North America in 2019.
+
+---
+
+## Top and Bottom Countries by Life Expectancy
+
+```{r plot5, fig.width=10, fig.height=8}
+df_country_2019 <- df %>%
+  filter(year == 2019) %>%
+  distinct(country, region, wb_life_expectancy,
+           health_spending_per_capita) %>%
+  arrange(desc(wb_life_expectancy))
+
+top10 <- head(df_country_2019, 10) %>% mutate(group = "Top 10")
+bottom10 <- tail(df_country_2019, 10) %>% mutate(group = "Bottom 10")
+top_bottom <- bind_rows(top10, bottom10)
+
+ggplot(top_bottom,
+       aes(x = reorder(country, wb_life_expectancy),
+           y = wb_life_expectancy,
+           fill = group)) +
+  geom_col() +
+  geom_text(aes(label = paste0("$", round(health_spending_per_capita, 0))),
+            hjust = -0.1, size = 3) +
+  coord_flip() +
+  scale_fill_manual(values = c("Top 10" = "#2ecc71",
+                               "Bottom 10" = "#e74c3c")) +
+  scale_y_continuous(limits = c(0, 100)) +
+  labs(
+    title = "Top 10 and Bottom 10 Countries by Life Expectancy (2019)",
+    subtitle = "Labels show healthcare spending per capita in USD",
+    x = "Country",
+    y = "Life Expectancy (years)",
+    fill = "",
+    caption = "Source: World Bank, IHME GBD 2023"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(plot.title = element_text(face = "bold"),
+        legend.position = "top")
+```
+
+**Finding:** The spending gap between the highest and lowest life expectancy countries is stark. Top 10 countries spend between $2,600 and $9,610 per person annually. Bottom 10 countries, all in Sub-Saharan Africa, spend between $13 and $320 per person. Somalia spends just $13 per capita. This more than 500-fold difference in investment corresponds to a life expectancy gap of approximately 30 to 35 years. Notably, Japan and South Korea achieve among the highest life expectancies at relatively moderate spending levels ($4,431 and $2,602 respectively), suggesting healthcare system efficiency matters as much as total expenditure.
+
+---
+
+# Key Findings Summary
+
+1. **Healthcare spending is strongly associated with life expectancy.** A clear positive relationship exists globally, with the greatest gains occurring at lower spending levels.
+
+2. **Infectious diseases respond to healthcare investment.** Tuberculosis, Malaria, HIV/AIDS, and lower respiratory infections all show negative correlations with spending, countries that invest more have significantly lower mortality from these conditions.
+
+3. **Non-communicable diseases do not respond to spending in the same way.** Cancer, cardiovascular disease, and diabetes show higher rates in wealthier countries, driven by lifestyle, demographic, and longevity factors rather than healthcare under-investment.
+
+4. **Sub-Saharan Africa made the steepest improvements in life expectancy** from 2000 to 2019, likely driven by HIV/AIDS treatment scale-up, yet still lags all other regions by at least 10 years.
+
+5. **A more than 500-fold spending gap exists** between the highest and lowest life expectancy countries, all of which are in Sub-Saharan Africa.
+
+---
+
+# Limitations
+
+- This analysis shows **association, not causation**. Higher spending is correlated with better outcomes but other factors, governance, education, sanitation, nutrition, also drive health outcomes.
+- The GBD disease data in this analysis covers selected years (2000, 2005, 2010, 2015, 2019), not every year.
+- Hospital beds data had significant missing values for many countries and years, limiting its use in the correlation analysis.
+- Country level averages mask significant within-country inequality, national spending figures do not reflect how equitably resources are distributed.
+- The positive correlation between spending and non-communicable disease burden may partially reflect better diagnosis and reporting in high-income countries, not only true higher burden.
+
+---
+
+# Conclusion
+
+This analysis demonstrates that healthcare investment matters significantly for infectious disease outcomes but has a more complex relationship with non communicable disease burden. For global health stakeholders, including pharmaceutical companies prioritising R&D investment, health technology companies building predictive tools, and policymakers allocating resources, these findings suggest that infectious disease programs in low income countries represent areas where spending has clear, measurable impact on mortality, while non-communicable disease strategies must address lifestyle and demographic factors alongside healthcare investment.
+
+The persistent gap in both spending and life expectancy between Sub-Saharan Africa and high-income regions, despite rapid improvement since 2000, underscores the scale of investment still required to achieve global health equity.
+
+---
+
+# Session Information
+
+```{r session}
+sessionInfo()
+```
