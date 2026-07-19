@@ -55,7 +55,7 @@ Neoplasms (cancer), Diabetes mellitus, Lower respiratory infections.
 # Data Cleaning and Methodology
 
 ```{r load_data}
-merged_full <- read_csv("C:/Users/KHUSHI/amr_project/data/processed/merged_full.csv",
+merged_full <- read_csv("./data/processed/merged_full.csv",
                         show_col_types = FALSE)
 
 df <- merged_full %>%

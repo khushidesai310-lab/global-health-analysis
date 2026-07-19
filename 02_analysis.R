@@ -10,10 +10,10 @@ library(scales)
 library(patchwork)
 library(viridis)
 
-dir.create("C:/Users/KHUSHI/amr_project/outputs/figures", recursive = TRUE)
+dir.create("./outputs/figures", recursive = TRUE)
 
 # Load the cleaned merged dataset
-merged_full <- read_csv("C:/Users/KHUSHI/amr_project/data/processed/merged_full.csv")
+merged_full <- read_csv("./data/processed/merged_full.csv")
 
 # Remove NAs in key columns and remove regional aggregates
 df <- merged_full %>%
@@ -64,7 +64,7 @@ plot1 <- ggplot(df_2019,
     legend.text = element_text(size = 8)
   )
 
-ggsave("C:/Users/KHUSHI/amr_project/outputs/figures/plot1_spending_vs_lifeexp.png",
+ggsave("./outputs/figures/plot1_spending_vs_lifeexp.png",
        plot1, width = 10, height = 7, dpi = 300)
 
 cat("Plot 1 saved\n")
@@ -105,7 +105,7 @@ plot2 <- ggplot(df_disease_region,
     legend.text = element_text(size = 7)
   )
 
-ggsave("C:/Users/KHUSHI/amr_project/outputs/figures/plot2_disease_by_region.png",
+ggsave("./outputs/figures/plot2_disease_by_region.png",
        plot2, width = 12, height = 8, dpi = 300)
 
 cat("Plot 2 saved\n")
@@ -157,7 +157,7 @@ plot3 <- ggplot(df_corr,
   theme(plot.title = element_text(face = "bold"),
         legend.position = "bottom")
 
-ggsave("C:/Users/KHUSHI/amr_project/outputs/figures/plot3_spending_correlation.png",
+ggsave("./outputs/figures/plot3_spending_correlation.png",
        plot3, width = 10, height = 6, dpi = 300)
 
 cat("Plot 3 saved\n")
@@ -194,7 +194,7 @@ plot4 <- ggplot(df_trend,
   theme(plot.title = element_text(face = "bold"),
         legend.position = "bottom")
 
-ggsave("C:/Users/KHUSHI/amr_project/outputs/figures/plot4_lifeexp_trends.png",
+ggsave("./outputs/figures/plot4_lifeexp_trends.png",
        plot4, width = 10, height = 6, dpi = 300)
 
 cat("Plot 4 saved\n")
@@ -239,7 +239,7 @@ plot5 <- ggplot(top_bottom,
   theme(plot.title = element_text(face = "bold"),
         legend.position = "top")
 
-ggsave("C:/Users/KHUSHI/amr_project/outputs/figures/plot5_top_bottom_countries.png",
+ggsave("./outputs/figures/plot5_top_bottom_countries.png",
        plot5, width = 10, height = 8, dpi = 300)
 
 cat("Plot 5 saved\n")

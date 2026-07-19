@@ -12,7 +12,7 @@ library(countrycode)
 # STEP 1: Load GBD Life Expectancy Data
 # ================================================
 
-gbd_raw <- read_csv("C:/Users/KHUSHI/amr_project/data/IHME-GBD_2023_DATA-38741f33-1.csv")
+gbd_raw <- read_csv("./data/IHME-GBD_2023_DATA-38741f33-1.csv")
 
 glimpse(gbd_raw)
 
@@ -33,7 +33,7 @@ head(gbd_clean)
 # ================================================
 
 spending_raw <- read_csv(
-  "C:/Users/KHUSHI/amr_project/data/API_SH.XPD.CHEX.PC.CD_DS2_en_csv_v2_4562.csv",
+  "./data/API_SH.XPD.CHEX.PC.CD_DS2_en_csv_v2_4562.csv",
   skip = 4  # World Bank CSVs have 4 header rows to skip
 )
 
@@ -64,7 +64,7 @@ head(spending_long)
 # ================================================
 
 le_raw <- read_csv(
-  "C:/Users/KHUSHI/amr_project/data/API_SP.DYN.LE00.IN_DS2_en_csv_v2_2473.csv",
+  "./data/API_SP.DYN.LE00.IN_DS2_en_csv_v2_2473.csv",
   skip = 4
 )
 
@@ -92,7 +92,7 @@ head(le_long)
 # ================================================
 
 beds_raw <- read_csv(
-  "C:/Users/KHUSHI/amr_project/data/API_SH.MED.BEDS.ZS_DS2_en_csv_v2_5054.csv",
+  "./data/API_SH.MED.BEDS.ZS_DS2_en_csv_v2_5054.csv",
   skip = 4
 )
 
@@ -145,9 +145,9 @@ glimpse(merged)
 # ================================================
 # STEP 7: Save cleaned merged dataset
 # ================================================
-dir.create("C:/Users/KHUSHI/amr_project/data/processed", recursive = TRUE)
+dir.create("./data/processed", recursive = TRUE)
 write_csv(merged,
-          "C:/Users/KHUSHI/amr_project/data/processed/merged_clean.csv")
+          "./data/processed/merged_clean.csv")
 
 cat("Saved successfully!\n")
 cat("Countries in dataset:", n_distinct(merged$country), "\n")
